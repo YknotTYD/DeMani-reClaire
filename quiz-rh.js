@@ -113,6 +113,8 @@
 
   function showJobs(vals) {
 
+    showRadar(vals);
+  
     var ranked = JOBS.map(function (j) {
 
       var total = 0;
@@ -309,4 +311,74 @@
   }).catch(function () {
     $("qtext").textContent = "Impossible de lire jobs.json. Vérifie qu'il est dans le même dossier que la page, et ouvre la page depuis un serveur (pas en double-clic sur le fichier).";
   });
+
+  function showRadar(vals) {
+  const canvas = document.getElementById("skillsRadar");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  const keys = [
+    "leadership", "commercial", "relationnel",
+    "rigueur", "analyse", "patrimoine",
+    "international", "agri", "digital"
+  ];
+
+  const labels = [
+    "Leadership", "Commercial", "Relationnel",
+    "Rigueur", "Analyse", "Patrimoine",
+    "International", "Agri/Viti", "Digital"
+  ];
+
+  const values = keys.map(k => {
+    const trait = TRAITS.find(t => t.key === k);
+    const value = Number(vals[k] || 1);
+    return trait
+      ? ((value - trait.min) / (trait.max - trait.min)) * 100
+      : 0;
+  });
+
+  if (window.skillsChart) window.skillsChart.destroy();
+
+  window.skillsChart = new Chart(ctx, {
+    type: "radar",
+    data: {
+      labels,
+datasets: [{
+  label: "Mon profil",
+  data: values,
+  backgroundColor: "rgba(0, 112, 96, 0.16)",
+  borderColor: "#007060",
+  pointBackgroundColor: "#007060",
+  pointBorderColor: "#fff",
+  pointRadius: 4,
+  borderWidth: 2
+}]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+plugins: {
+  legend: { display: false }
+},
+scales: {
+  r: {
+    min: 0,
+    max: 100,
+    ticks: { display: false },
+    grid: { color: "rgba(100, 116, 139, 0.15)" },
+    angleLines: { color: "rgba(100, 116, 139, 0.2)" },
+    pointLabels: {
+      color: "#475569",
+      font: {
+        family: getComputedStyle(document.body).fontFamily,
+        size: 11,
+        weight: "500"
+      }
+    }
+  }
+}
+    }
+  });
+}
+
 })();

@@ -87,6 +87,30 @@ button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px
 .res .why { grid-column: 1 / -1; font-size: .875rem; color: var(--muted); }
 textarea { width: 100%; font: .8125rem/1.5 ui-monospace, Menlo, Consolas, monospace; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; resize: vertical; min-height: 120px; }
 .note { font-size: .875rem; color: var(--muted); margin: 0; }
+
+.chart-container {
+  max-width: 600px;
+  margin: 30px auto;
+  padding: 24px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.chart-container h3 {
+  margin: 0 0 20px;
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-color, #263238);
+}
+
+.chart-container canvas {
+  width: 100%;
+  max-height: 420px;
+}
+
 @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
 </style>
 
@@ -115,6 +139,12 @@ textarea { width: 100%; font: .8125rem/1.5 ui-monospace, Menlo, Consolas, monosp
 
     <h2 style="margin-top:28px">Tes envies en chiffres</h2>
     <p class="lede" style="margin-bottom:14px">Moyenne de tes 2 réponses par trait, sur 5.</p>
+
+    <div class="chart-container">
+      <h3>Mon profil de compétences</h3>
+      <canvas id="skillsRadar"></canvas>
+    </div>
+
     <div class="card results" id="list"></div>
 
     <div class="card" style="margin-top:20px">
@@ -130,4 +160,5 @@ textarea { width: 100%; font: .8125rem/1.5 ui-monospace, Menlo, Consolas, monosp
   </section>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="quiz-rh.js"></script>
