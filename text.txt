@@ -1,7 +1,27 @@
-charte graphique bcpe
-vite
-deployment
+video
+phone UI
 pannel modif json
+charte graphique bcpe
+deployment
 .env
 json versioning
 nom
+choper les offres en temps réél
+
+https://www.youtube.com/watch?v=jUngY80YAGg Découvrez BPALC avec Magali, Directrice adjointe du Territoire Alsace Sud sur l’Animation Co
+https://www.youtube.com/watch?v=5teyhGl2j1c Découvrez la BPALC avec Céline LITTY, Directrice de la succursale de Troyes Libération
+https://www.youtube.com/watch?v=O5SeT3WVWL4 Découvrez BP Alsace Lorraine Champagne avec Céline, Directrice d'Agence
+https://www.youtube.com/watch?v=AZmlRvTMCP4 Découvrez la BPALC avec Sadia, Experte Patrimoniale
+https://www.youtube.com/watch?v=O8K7CZoB6XQ Découvrez la BPALC avec Virginie FERRY-DURAND, Chargée de Clientèle
+https://www.youtube.com/watch?v=7v-wWW4Tm7M Découvrez BP Alsace Lorraine Champagne avec Floriane, Chargée de clientèle Particulier
+https://www.youtube.com/watch?v=mio1c9sYcjU Découvrez la BPALC avec Quentin Defranoux, Conseiller Clientèle
+https://www.youtube.com/watch?v=0Lu1HJn0QSE Découvrez Banque Populaire ALC avec Marie, Conseillère de Clientèle à Distance
+https://www.youtube.com/watch?v=XRuAe_jeAAE Découvrez BPALC avec Swann BURGER, apprenti Master 2 chargé de clientèle professionnelle
+https://www.youtube.com/watch?v=qqdysO_Telc Découvrez la BPALC avec Olivier, Data Analyste
+https://www.youtube.com/watch?v=2sSfNWEhKec Découvrez Banque Populaire ALC avec Adrien, Expert Tarification
+https://www.youtube.com/watch?v=ng9mNQVxpps Découvrez BP Alsace Lorraine Champagne avec Yohan, Responsable accompagnement au changement
+https://www.youtube.com/watch?v=WJ5SmFxFaTg Découvrez Banque Populaire ALC avec Emeric, Conseiller de Clientèle
+
+https://www.youtube.com/channel/UCEO2-sJLw0H4_xdX1yVbCNg Welcome to the Jungle
+https://www.youtube.com/channel/UCOv2DFyHLJRNuMmDE5XTeAA Welcome to the Jungle Solutions
+https://www.youtube.com/channel/UCPgHrJ3miEl0TqjKDykM5-Q Banque Populaire Alsace Lorraine Champagne
