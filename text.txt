@@ -2,3 +2,6 @@ charte graphique bcpe
 vite
 deployment
 pannel modif json
+.env
+json versioning
+nom

@@ -1,0 +1,23 @@
+{
+  "name": "bpce",
+  "version": "1.0.0",
+  "description": "",
+  "main": "quiz-rh.js",
+  "scripts": {
+    "dev": "vite"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YknotTYD/DeMani-reClaire.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/YknotTYD/DeMani-reClaire/issues"
+  },
+  "homepage": "https://github.com/YknotTYD/DeMani-reClaire#readme",
+  "devDependencies": {
+    "vite": "^8.3.8"
+  }
+}
