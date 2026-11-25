@@ -1,45 +1,45 @@
 import ollama from "https://esm.sh/ollama@0.6.4/browser";
 
 let analysisRun = 0;
-const MODEL = "glm-4.7-flash";
 
-/* Ce que mesure chaque trait : des envies (ce que la personne aime faire), pas des compétences. */
-const TRAIT_MEANING = {
-  leadership:    "envie de diriger une équipe et de décider",
-  commercial:    "goût pour la vente et la négociation",
-  relationnel:   "goût pour le contact humain et la relation client",
-  rigueur:       "goût pour les règles, les procédures et la conformité",
-  analyse:       "goût pour l'analyse financière et du risque",
-  patrimoine:    "intérêt pour le conseil en placements, fiscalité et transmission",
-  international: "envie de travailler avec d'autres pays et d'autres langues",
-  agri:          "attrait pour le monde agricole et viticole",
-  digital:       "envie de travailler à distance avec des outils numériques"
+/* Valeurs par défaut. Tout est remplacé par la section "meta" de jobs.json quand elle existe. */
+const CONFIG = {
+  model: "glm-4.7-flash",
+  agentName: "Ton conseiller",
+  questionLead: "Ça me plairait de…",
+  levels: ["Pas du tout", "Un peu", "Moyennement", "Beaucoup", "Énormément"]
 };
 
-const SYSTEM_PROMPT = [
-  "Tu es un conseiller en orientation professionnelle. Tu t'adresses à la personne avec « tu ».",
-  "Tu reçois ses envies professionnelles, notées de 1 (ça ne me plaît pas du tout) à 5 (ça me plaît énormément), et les métiers que le quiz lui a proposés.",
-  "Ces notes mesurent ce qu'elle aime faire, jamais ce qu'elle sait faire : ne parle jamais de compétences ni de niveau.",
-  "Règles :",
-  "- 3 est neutre : n'en parle pas. Commente seulement les notes très hautes (4 à 5) ou très basses (1 à 2).",
-  "- Appuie-toi sur des chiffres du profil. Chaque phrase doit dire quelque chose de précis sur cette personne.",
-  "- Repère une tension ou une cohérence entre deux envies (par exemple beaucoup de leadership avec peu de relationnel) et dis ce qu'elle implique pour le choix du métier.",
-  "- Termine par une phrase qui explique pourquoi le premier métier proposé colle, ou ce qui pourrait coincer dans ce métier. N'invente aucun autre métier.",
-  "- Interdit : compliments, encouragements, formules générales (« il est important de », « tu as un profil »), introduction, conclusion, répétition des notes une par une.",
-  "- Texte brut en français, sans liste, sans titre, sans gras. 60 mots maximum."
-].join("\n");
+function buildSystemPrompt(min, max) {
+  return [
+    "Tu es un conseiller en orientation professionnelle. Tu t'adresses à la personne avec « tu ».",
+    "Tu reçois ses envies professionnelles, notées de " + min + " (ça ne me plaît pas du tout) à " + max + " (ça me plaît énormément), et les métiers que le quiz lui a proposés.",
+    "Ces notes mesurent ce qu'elle aime faire, jamais ce qu'elle sait faire : ne parle jamais de compétences ni de niveau.",
+    "Écris 3 courts paragraphes, 150 à 200 mots au total, séparés par une ligne vide :",
+    "1. Ce qui ressort de ses envies : les notes les plus hautes et les plus basses, avec les chiffres, et ce que ça dit de la façon dont elle veut travailler au quotidien.",
+    "2. Les synergies et les tensions entre deux ou trois envies (par exemple beaucoup de leadership avec peu de relationnel), et ce que ça implique concrètement dans un poste.",
+    "3. Pour les deux premiers métiers proposés : pourquoi ils collent à ses envies, et ce qui pourrait coincer pour elle dans chacun. N'invente aucun autre métier.",
+    "Règles :",
+    "- La note du milieu est neutre : n'en parle pas.",
+    "- Chaque phrase doit dire quelque chose de précis sur cette personne, appuyé sur ses chiffres ou sur un métier de la liste.",
+    "- Interdit : compliments, encouragements, formules générales (« il est important de », « tu as un profil »), introduction, conclusion, récitation des notes une par une.",
+    "- Texte brut en français, sans liste, sans titre, sans gras."
+  ].join("\n");
+}
 
 /* Envoie les scores à Ollama et appelle onToken(texte complet) à chaque morceau reçu. */
-async function analyse_traits(vals, jobs, onToken) {
-  const lines = Object.keys(vals).map(k => "- " + k + " (" + (TRAIT_MEANING[k] || k) + ") : " + vals[k] + "/5").join("\n");
+async function analyse_traits(vals, traits, jobs, onToken) {
+  const min = Math.min(...traits.map(t => t.min));
+  const max = Math.max(...traits.map(t => t.max));
+  const lines = traits.map(t => "- " + t.key + " (" + (t.description || t.label) + ") : " + vals[t.key] + "/" + t.max).join("\n");
   const top = (jobs || []).map((j, i) => (i + 1) + ". " + j.title + " (" + j.score + " %)").join("\n");
   const user = "Envies de la personne :\n" + lines + "\n\nMétiers proposés par le quiz, du plus au moins adapté :\n" + (top || "aucun");
 
   const request = {
-    model: MODEL,
+    model: CONFIG.model,
     stream: true,
     options: { temperature: 0.4 },
-    messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: user }]
+    messages: [{ role: "system", content: buildSystemPrompt(min, max) }, { role: "user", content: user }]
   };
   let stream;
   try {
@@ -60,42 +60,20 @@ async function analyse_traits(vals, jobs, onToken) {
 window.analyse_traits = analyse_traits;
 
 (function () {
-  /* Les traits et les métiers sont lus dans jobs.json (même dossier). Les questions restent ici. */
+  /* Tout vient de jobs.json : traits (label, description, bornes, questions), métiers et réglages "meta". */
   var TRAITS = [];
   var JOBS = [];
-
-  /* Deux questions par trait, la valeur du trait est la moyenne des deux (1 à 5). */
-  var QUESTIONS = [
-    ["leadership",    "diriger une équipe et prendre les décisions au quotidien."],
-    ["commercial",    "négocier un contrat et convaincre un client de signer."],
-    ["relationnel",   "passer mes journées à rencontrer et échanger avec de nouvelles personnes."],
-    ["rigueur",       "vérifier que chaque dossier respecte parfaitement les règles et la réglementation."],
-    ["analyse",       "étudier des chiffres, des bilans et des risques pour éclairer une décision."],
-    ["patrimoine",    "conseiller des familles sur leurs placements, leur fiscalité et leur transmission."],
-    ["international", "travailler avec des clients ou des collègues d'autres pays, en plusieurs langues."],
-    ["agri",          "évoluer au contact des exploitations agricoles et des vignobles."],
-    ["digital",       "travailler principalement à distance, avec des outils numériques."],
-    ["leadership",    "former, motiver et faire grandir les membres de mon équipe."],
-    ["commercial",    "atteindre des objectifs de vente ambitieux."],
-    ["relationnel",   "entretenir une relation de confiance sur le long terme avec mes clients."],
-    ["rigueur",       "suivre des procédures précises, sans place pour l'approximation."],
-    ["analyse",       "évaluer le risque d'un projet avant de dire oui ou non."],
-    ["patrimoine",    "construire une stratégie de placement sur mesure pour un client."],
-    ["international", "voyager ou vivre à l'étranger pour mon travail."],
-    ["agri",          "accompagner des agriculteurs ou des viticulteurs dans leurs projets."],
-    ["digital",       "automatiser mes tâches et gérer mes dossiers entièrement en ligne."]
-  ];
-  var LEVELS = ["Pas du tout", "Un peu", "Moyennement", "Beaucoup", "Énormément"];
-
-  var N = QUESTIONS.length;
-  var answers = new Array(N).fill(null);
+  var QUESTIONS = [];   /* [clé du trait, texte de la question], questions des traits en alternance */
+  var LEVELS = CONFIG.levels;
+  var N = 0;
+  var answers = [];
   var idx = 0;
 
   function $(id) { return document.getElementById(id); }
 
   function renderInput() {
     var box = $("input"); box.innerHTML = "";
-    var s = document.createElement("div"); s.className = "opts"; s.setAttribute("role", "group"); s.setAttribute("aria-label", "Ça me plairait");
+    var s = document.createElement("div"); s.className = "opts"; s.setAttribute("role", "group"); s.setAttribute("aria-label", CONFIG.questionLead);
     LEVELS.forEach(function (text, i) {
       var b = document.createElement("button");
       b.type = "button"; b.dataset.v = i + 1; b.setAttribute("aria-pressed", String(answers[idx] === i + 1));
@@ -111,7 +89,7 @@ window.analyse_traits = analyse_traits;
     var q = QUESTIONS[idx];
     $("count").textContent = (idx + 1) + " / " + N;
     $("fill").style.width = ((idx + 1) / N * 100) + "%";
-    $("tlabel").textContent = "Ça me plairait de…";
+    $("tlabel").textContent = CONFIG.questionLead;
     $("qtext").textContent = q[1].charAt(0).toUpperCase() + q[1].slice(1);
     renderInput();
     $("back").disabled = idx === 0;
@@ -135,7 +113,7 @@ window.analyse_traits = analyse_traits;
   $("back").addEventListener("click", function () { if (idx > 0) { idx--; renderQ(); } });
   document.addEventListener("keydown", function (e) {
     if ($("quiz").hidden || !TRAITS.length) return;
-    if (e.key >= "1" && e.key <= "5") pick(+e.key);
+    if (e.key >= "1" && e.key <= String(LEVELS.length)) pick(+e.key);
     else if (e.key === "Enter" && answers[idx] !== null) next();
   });
 
@@ -368,8 +346,8 @@ window.analyse_traits = analyse_traits;
     const head = document.createElement("div"); head.className = "ai-head";
     const av = document.createElement("div"); av.className = "ai-avatar"; av.textContent = "IA"; av.setAttribute("aria-hidden", "true");
     const id = document.createElement("div"); id.className = "ai-id";
-    const nm = document.createElement("div"); nm.className = "ai-name"; nm.textContent = "Votre agent orientation BCPE";
-    const sub = document.createElement("div"); sub.className = "ai-sub"; sub.textContent = MODEL// + " · tourne sur ton ordinateur";
+    const nm = document.createElement("div"); nm.className = "ai-name"; nm.textContent = CONFIG.agentName;
+    const sub = document.createElement("div"); sub.className = "ai-sub"; sub.textContent = CONFIG.model;
     id.appendChild(nm); id.appendChild(sub);
     const status = document.createElement("div"); status.className = "ai-status"; status.setAttribute("role", "status");
     head.appendChild(av); head.appendChild(id); head.appendChild(status);
@@ -386,7 +364,7 @@ window.analyse_traits = analyse_traits;
     }
     setState("thinking", "Il lit tes résultats…");
 
-    analyse_traits(vals, jobs, function (text) {
+    analyse_traits(vals, TRAITS, jobs, function (text) {
       if (run !== analysisRun) return;
       setState("streaming", text);
     }).then(function () {
@@ -396,7 +374,7 @@ window.analyse_traits = analyse_traits;
       if (run !== analysisRun || (e && e.name === "AbortError")) return;
       setState("error", "Analyse impossible : " + (e && e.message ? e.message : e));
       const note = document.createElement("p"); note.className = "ai-note";
-      note.textContent = "Vérifie qu'Ollama tourne, que le modèle " + MODEL + " est installé (ollama list), et lance-le avec OLLAMA_ORIGINS=\"*\" ollama serve.";
+      note.textContent = "Vérifie qu'Ollama tourne, que le modèle " + CONFIG.model + " est installé (ollama list), et lance-le avec OLLAMA_ORIGINS=\"*\" ollama serve.";
       body.appendChild(note);
     });
   }
@@ -440,89 +418,112 @@ window.analyse_traits = analyse_traits;
     $("out").hidden = true; $("quiz").hidden = false; renderQ(); window.scrollTo(0, 0);
   });
 
+  /* Lit et vérifie jobs.json, puis remplit TRAITS, QUESTIONS, LEVELS, JOBS et CONFIG. */
+  function applyData(data) {
+    function bad(msg) { var e = new Error("jobs.json invalide : " + msg); e.invalid = true; return e; }
+    if (!data || typeof data.traits !== "object" || !data.traits) throw bad("la section \"traits\" est absente.");
+
+    var meta = data.meta || {};
+    ["model", "agentName", "questionLead"].forEach(function (k) { if (typeof meta[k] === "string" && meta[k]) CONFIG[k] = meta[k]; });
+    if (Array.isArray(meta.levels) && meta.levels.length >= 2) CONFIG.levels = meta.levels;
+    LEVELS = CONFIG.levels;
+
+    TRAITS = Object.keys(data.traits).map(function (k) {
+      var t = data.traits[k] || {};
+      var qs = Array.isArray(t.questions) ? t.questions.filter(function (q) { return typeof q === "string" && q; }) : [];
+      return {
+        key: k,
+        label: t.label || k,
+        short: t.short || t.label || k,
+        description: t.description,
+        min: typeof t.min === "number" ? t.min : 1,
+        max: typeof t.max === "number" ? t.max : LEVELS.length,
+        questions: qs
+      };
+    }).filter(function (t) { return t.questions.length; });
+    if (!TRAITS.length) throw bad("aucun trait n'a de liste \"questions\".");
+
+    QUESTIONS = [];
+    if (meta.questionOrder === "alternate") {
+      /* 1re question de chaque trait, puis 2e de chaque trait, etc. */
+      var rounds = Math.max.apply(null, TRAITS.map(function (t) { return t.questions.length; }));
+      for (var r = 0; r < rounds; r++) {
+        TRAITS.forEach(function (t) { if (t.questions[r]) QUESTIONS.push([t.key, t.questions[r]]); });
+      }
+    } else {
+      /* Par défaut : toutes les questions d'un trait d'affilée, dans l'ordre du JSON. */
+      TRAITS.forEach(function (t) { t.questions.forEach(function (q) { QUESTIONS.push([t.key, q]); }); });
+    }
+    N = QUESTIONS.length;
+    answers = new Array(N).fill(null);
+    idx = 0;
+    JOBS = Array.isArray(data.jobs) ? data.jobs : [];
+  }
+
   $("qtext").textContent = "Chargement…";
   fetch("jobs.json").then(function (r) {
     if (!r.ok) throw new Error("http " + r.status);
     return r.json();
   }).then(function (data) {
-    TRAITS = Object.keys(data.traits).filter(function (k) {
-      return QUESTIONS.some(function (q) { return q[0] === k; });
-    }).map(function (k) {
-      return { key: k, label: data.traits[k].label, min: data.traits[k].min, max: data.traits[k].max };
-    });
-    JOBS = data.jobs || [];
+    applyData(data);
     renderQ();
-  }).catch(function () {
-    $("qtext").textContent = "Impossible de lire jobs.json. Vérifie qu'il est dans le même dossier que la page, et ouvre la page depuis un serveur (pas en double-clic sur le fichier).";
+  }).catch(function (e) {
+    $("qtext").textContent = e && e.invalid
+      ? e.message
+      : "Impossible de lire jobs.json. Vérifie qu'il est dans le même dossier que la page, et ouvre la page depuis un serveur (pas en double-clic sur le fichier).";
   });
 
   function showRadar(vals) {
-  const canvas = document.getElementById("skillsRadar");
-  if (!canvas) return;
+    const canvas = document.getElementById("skillsRadar");
+    if (!canvas || typeof Chart === "undefined") return;
 
-  const ctx = canvas.getContext("2d");
-  const keys = [
-    "leadership", "commercial", "relationnel",
-    "rigueur", "analyse", "patrimoine",
-    "international", "agri", "digital"
-  ];
+    const ctx = canvas.getContext("2d");
+    const labels = TRAITS.map(t => t.short);
+    const values = TRAITS.map(t => {
+      const value = Number(vals[t.key]);
+      return ((value - t.min) / (t.max - t.min)) * 100;
+    });
 
-  const labels = [
-    "Leadership", "Commercial", "Relationnel",
-    "Rigueur", "Analyse", "Patrimoine",
-    "International", "Agri/Viti", "Digital"
-  ];
+    if (window.skillsChart) window.skillsChart.destroy();
 
-  const values = keys.map(k => {
-    const trait = TRAITS.find(t => t.key === k);
-    const value = Number(vals[k] || 1);
-    return trait
-      ? ((value - trait.min) / (trait.max - trait.min)) * 100
-      : 0;
-  });
-
-  if (window.skillsChart) window.skillsChart.destroy();
-
-  window.skillsChart = new Chart(ctx, {
-    type: "radar",
-    data: {
-      labels,
-datasets: [{
-  label: "Mon profil",
-  data: values,
-  backgroundColor: "rgba(0, 112, 96, 0.16)",
-  borderColor: "#007060",
-  pointBackgroundColor: "#007060",
-  pointBorderColor: "#fff",
-  pointRadius: 4,
-  borderWidth: 2
-}]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-plugins: {
-  legend: { display: false }
-},
-scales: {
-  r: {
-    min: 0,
-    max: 100,
-    ticks: { display: false },
-    grid: { color: "rgba(149, 172, 205, 0.79)" },
-    angleLines: { color: "rgba(240, 243, 248, 0.7)" },
-    pointLabels: {
-      color: "#ffffff",
-      font: {
-        family: getComputedStyle(document.body).fontFamily,
-        size: 11,
-        weight: "500"
+    window.skillsChart = new Chart(ctx, {
+      type: "radar",
+      data: {
+        labels,
+        datasets: [{
+          label: "Mon profil",
+          data: values,
+          backgroundColor: "rgba(0, 112, 96, 0.16)",
+          borderColor: "#007060",
+          pointBackgroundColor: "#007060",
+          pointBorderColor: "#fff",
+          pointRadius: 4,
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          r: {
+            min: 0,
+            max: 100,
+            ticks: { display: false },
+            grid: { color: "rgba(149, 172, 205, 0.79)" },
+            angleLines: { color: "rgba(240, 243, 248, 0.7)" },
+            pointLabels: {
+              color: "#ffffff",
+              font: {
+                family: getComputedStyle(document.body).fontFamily,
+                size: 11,
+                weight: "500"
+              }
+            }
+          }
+        }
       }
-    }
+    });
   }
-}
-    }
-  });
-}
 
 })();

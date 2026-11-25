@@ -3,61 +3,117 @@
     "criterion": "target: nombre, 'inf' (plus haut = mieux) ou '-inf' (plus bas = mieux). min/max: null = pas de borne. weight: importance relative. strict: true = hors borne -> poste éliminé, false -> score 0 sur ce critère.",
     "bornes": "Une borne du côté opposé à la cible est une limite (violation). Une borne du côté de la cible est un plafond de saturation (target inf + max=10 -> 10 et plus = score 1)."
   },
+    "meta": {
+    "model": "glm-4.7-flash",
+    "agentName": "Votre agent orientation BCPE",
+    "questionLead": "Ça me plairait de…",
+    "levels": [
+      "Pas du tout",
+      "Un peu",
+      "Moyennement",
+      "Beaucoup",
+      "Énormément"
+    ]
+  },
   "traits": {
-    "bac": {
-      "label": "Niveau d'études (bac+n)",
-      "min": 0,
-      "max": 8
-    },
-    "experience": {
-      "label": "Années d'expérience",
-      "min": 0,
-      "max": 30
-    },
     "leadership": {
       "label": "Leadership / management",
+      "short": "Leadership",
+      "description": "envie de diriger une équipe et de décider",
       "min": 1,
-      "max": 5
+      "max": 5,
+      "questions": [
+        "diriger une équipe et prendre les décisions au quotidien.",
+        "former, motiver et faire grandir les membres de mon équipe."
+      ]
     },
     "commercial": {
       "label": "Sens commercial / négociation",
+      "short": "Commercial",
+      "description": "goût pour la vente et la négociation",
       "min": 1,
-      "max": 5
+      "max": 5,
+      "questions": [
+        "négocier un contrat et convaincre un client de signer.",
+        "atteindre des objectifs de vente ambitieux."
+      ]
     },
     "relationnel": {
       "label": "Aisance relationnelle",
+      "short": "Relationnel",
+      "description": "goût pour le contact humain et la relation client",
       "min": 1,
-      "max": 5
+      "max": 5,
+      "questions": [
+        "passer mes journées à rencontrer et échanger avec de nouvelles personnes.",
+        "entretenir une relation de confiance sur le long terme avec mes clients."
+      ]
     },
     "rigueur": {
       "label": "Rigueur / conformité",
+      "short": "Rigueur",
+      "description": "goût pour les règles, les procédures et la conformité",
       "min": 1,
-      "max": 5
+      "max": 5,
+      "questions": [
+        "vérifier que chaque dossier respecte parfaitement les règles et la réglementation.",
+        "suivre des procédures précises, sans place pour l'approximation."
+      ]
     },
     "analyse": {
       "label": "Analyse financière / risque",
+      "short": "Analyse",
+      "description": "goût pour l'analyse financière et du risque",
       "min": 1,
-      "max": 5
+      "max": 5,
+      "questions": [
+        "étudier des chiffres, des bilans et des risques pour éclairer une décision.",
+        "évaluer le risque d'un projet avant de dire oui ou non."
+      ]
     },
     "patrimoine": {
       "label": "Expertise patrimoniale",
+      "short": "Patrimoine",
+      "description": "intérêt pour le conseil en placements, fiscalité et transmission",
       "min": 1,
-      "max": 5
+      "max": 5,
+      "questions": [
+        "conseiller des familles sur leurs placements, leur fiscalité et leur transmission.",
+        "construire une stratégie de placement sur mesure pour un client."
+      ]
     },
     "international": {
       "label": "Ouverture internationale / langues",
+      "short": "International",
+      "description": "envie de travailler avec d'autres pays et d'autres langues",
       "min": 1,
-      "max": 5
+      "max": 5,
+      "questions": [
+        "travailler avec des clients ou des collègues d'autres pays, en plusieurs langues.",
+        "voyager ou vivre à l'étranger pour mon travail."
+      ]
     },
     "agri": {
       "label": "Connaissance agri / viti",
+      "short": "Agri/Viti",
+      "description": "attrait pour le monde agricole et viticole",
       "min": 1,
-      "max": 5
+      "max": 5,
+      "questions": [
+        "évoluer au contact des exploitations agricoles et des vignobles.",
+        "accompagner des agriculteurs ou des viticulteurs dans leurs projets."
+      ]
     },
     "digital": {
       "label": "Aisance digitale / à distance",
+      "short": "Digital",
+      "description": "envie de travailler à distance avec des outils numériques",
       "min": 1,
-      "max": 5
+      "max": 5,
+      "questions": [
+        "travailler principalement à distance, avec des outils numériques.",
+        "automatiser mes tâches et gérer mes dossiers entièrement en ligne."
+      ]
     }
   },
   "jobs": [
