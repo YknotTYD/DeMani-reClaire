@@ -1,11 +1,60 @@
 import ollama from "https://esm.sh/ollama@0.6.4/browser";
 
-async function analyse_traits() {
-  const res = await ollama.chat({
-    model: "glm-4.7-flash",
-    messages: [{ role: "system", content: "Each of the following are a score out of 5, be professional, analyse them, weak point, strong points, what matters, what doesn't, what points kind of synergize well, which ones do the opposite, be brief. leadership: 4, commercial: 1.5, relationnel: 5, rigueur: 3, analyse: 3.5, patrimoine: 2, international: 2.5, agri: 3, digital: 4, only talk about things that are worth talking about, don't feel forced to say something about every point, answer in plain text with no formating, 40 words maximum." }],
-  });
-  return res.message.content;
+let analysisRun = 0;
+const MODEL = "glm-4.7-flash";
+
+/* Ce que mesure chaque trait : des envies (ce que la personne aime faire), pas des compétences. */
+const TRAIT_MEANING = {
+  leadership:    "envie de diriger une équipe et de décider",
+  commercial:    "goût pour la vente et la négociation",
+  relationnel:   "goût pour le contact humain et la relation client",
+  rigueur:       "goût pour les règles, les procédures et la conformité",
+  analyse:       "goût pour l'analyse financière et du risque",
+  patrimoine:    "intérêt pour le conseil en placements, fiscalité et transmission",
+  international: "envie de travailler avec d'autres pays et d'autres langues",
+  agri:          "attrait pour le monde agricole et viticole",
+  digital:       "envie de travailler à distance avec des outils numériques"
+};
+
+const SYSTEM_PROMPT = [
+  "Tu es un conseiller en orientation professionnelle. Tu t'adresses à la personne avec « tu ».",
+  "Tu reçois ses envies professionnelles, notées de 1 (ça ne me plaît pas du tout) à 5 (ça me plaît énormément), et les métiers que le quiz lui a proposés.",
+  "Ces notes mesurent ce qu'elle aime faire, jamais ce qu'elle sait faire : ne parle jamais de compétences ni de niveau.",
+  "Règles :",
+  "- 3 est neutre : n'en parle pas. Commente seulement les notes très hautes (4 à 5) ou très basses (1 à 2).",
+  "- Appuie-toi sur des chiffres du profil. Chaque phrase doit dire quelque chose de précis sur cette personne.",
+  "- Repère une tension ou une cohérence entre deux envies (par exemple beaucoup de leadership avec peu de relationnel) et dis ce qu'elle implique pour le choix du métier.",
+  "- Termine par une phrase qui explique pourquoi le premier métier proposé colle, ou ce qui pourrait coincer dans ce métier. N'invente aucun autre métier.",
+  "- Interdit : compliments, encouragements, formules générales (« il est important de », « tu as un profil »), introduction, conclusion, répétition des notes une par une.",
+  "- Texte brut en français, sans liste, sans titre, sans gras. 60 mots maximum."
+].join("\n");
+
+/* Envoie les scores à Ollama et appelle onToken(texte complet) à chaque morceau reçu. */
+async function analyse_traits(vals, jobs, onToken) {
+  const lines = Object.keys(vals).map(k => "- " + k + " (" + (TRAIT_MEANING[k] || k) + ") : " + vals[k] + "/5").join("\n");
+  const top = (jobs || []).map((j, i) => (i + 1) + ". " + j.title + " (" + j.score + " %)").join("\n");
+  const user = "Envies de la personne :\n" + lines + "\n\nMétiers proposés par le quiz, du plus au moins adapté :\n" + (top || "aucun");
+
+  const request = {
+    model: MODEL,
+    stream: true,
+    options: { temperature: 0.4 },
+    messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: user }]
+  };
+  let stream;
+  try {
+    stream = await ollama.chat({ ...request, think: false }); // pas de phase de réflexion = réponse plus rapide
+  } catch (e) {
+    if (!/think/i.test(String(e && e.message))) throw e;
+    stream = await ollama.chat(request); // ce modèle n'accepte pas "think"
+  }
+
+  let out = "";
+  for await (const part of stream) {
+    const piece = part.message && part.message.content;
+    if (piece) { out += piece; onToken(out); }
+  }
+  return out;
 }
 
 window.analyse_traits = analyse_traits;
@@ -271,7 +320,86 @@ window.analyse_traits = analyse_traits;
     });
   }
 
-// ollama jsoneditor
+  /* Carte "conseiller" : style injecté une seule fois, texte écrit en direct par le modèle. */
+  function ensureAnalysisStyle() {
+    if (document.getElementById("analysis-style")) return;
+    var st = document.createElement("style"); st.id = "analysis-style";
+    st.textContent = [
+      "#analysis { margin-top: 24px; padding: 0; overflow: hidden; border-color: var(--accent, #0b6e8a); }",
+      "#analysis .ai-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; background: var(--accent-soft, #dcedf3); border-bottom: 1px solid var(--line, #d5dee4); }",
+      "#analysis .ai-avatar { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--accent, #0b6e8a); color: var(--accent-fg, #fff); font-family: var(--font-display, inherit); font-weight: 700; letter-spacing: .02em; }",
+      "#analysis .ai-id { min-width: 0; flex: 1; }",
+      "#analysis .ai-name { font-family: var(--font-display, inherit); font-weight: 700; font-size: 1.05rem; line-height: 1.2; }",
+      "#analysis .ai-sub { font-size: .8125rem; color: var(--muted, #5b6b75); overflow-wrap: anywhere; }",
+      "#analysis .ai-status { display: inline-flex; align-items: center; gap: 6px; font-size: .8125rem; font-weight: 600; color: var(--accent, #0b6e8a); white-space: nowrap; }",
+      "#analysis .ai-status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: ai-pulse 1.2s ease-in-out infinite; }",
+      "#analysis[data-state='done'] .ai-status { color: var(--muted, #5b6b75); }",
+      "#analysis[data-state='done'] .ai-status::before { animation: none; }",
+      "#analysis[data-state='error'] .ai-status { color: #b3261e; }",
+      "#analysis[data-state='error'] .ai-status::before { animation: none; }",
+      "#analysis .ai-body { padding: 20px; }",
+      "#analysis .ai-bubble { margin: 0; font-size: 1.05rem; line-height: 1.6; white-space: pre-wrap; max-width: 65ch; }",
+      "#analysis[data-state='thinking'] .ai-bubble { color: var(--muted, #5b6b75); }",
+      "#analysis[data-state='streaming'] .ai-bubble::after { content: ''; display: inline-block; width: 2px; height: 1.1em; margin-left: 2px; vertical-align: text-bottom; background: var(--accent, #0b6e8a); animation: ai-blink 1s steps(1) infinite; }",
+      "#analysis .ai-note { margin: 12px 0 0; font-size: .8125rem; color: var(--muted, #5b6b75); }",
+      "@keyframes ai-pulse { 50% { opacity: .25; } }",
+      "@keyframes ai-blink { 50% { opacity: 0; } }",
+      "@media (prefers-reduced-motion: reduce) { #analysis .ai-status::before, #analysis .ai-bubble::after { animation: none !important; } }"
+    ].join("\n");
+    document.head.appendChild(st);
+  }
+
+  var STATUS = { thinking: "Réfléchit…", streaming: "Écrit en direct", done: "Terminé", error: "Erreur" };
+
+  function startAnalysis(vals, jobs) {
+    const run = ++analysisRun;
+    ollama.abort(); // coupe une analyse précédente encore en cours
+    ensureAnalysisStyle();
+
+    let box = $("analysis");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "analysis";
+      box.className = "card";
+      $("jobs").insertAdjacentElement("afterend", box);
+    }
+    box.innerHTML = "";
+
+    const head = document.createElement("div"); head.className = "ai-head";
+    const av = document.createElement("div"); av.className = "ai-avatar"; av.textContent = "IA"; av.setAttribute("aria-hidden", "true");
+    const id = document.createElement("div"); id.className = "ai-id";
+    const nm = document.createElement("div"); nm.className = "ai-name"; nm.textContent = "Votre agent orientation BCPE";
+    const sub = document.createElement("div"); sub.className = "ai-sub"; sub.textContent = MODEL// + " · tourne sur ton ordinateur";
+    id.appendChild(nm); id.appendChild(sub);
+    const status = document.createElement("div"); status.className = "ai-status"; status.setAttribute("role", "status");
+    head.appendChild(av); head.appendChild(id); head.appendChild(status);
+
+    const body = document.createElement("div"); body.className = "ai-body";
+    const bubble = document.createElement("p"); bubble.className = "ai-bubble"; bubble.setAttribute("aria-live", "polite");
+    body.appendChild(bubble);
+    box.appendChild(head); box.appendChild(body);
+
+    function setState(state, text) {
+      box.dataset.state = state;
+      status.textContent = STATUS[state];
+      if (text !== undefined) bubble.textContent = text;
+    }
+    setState("thinking", "Il lit tes résultats…");
+
+    analyse_traits(vals, jobs, function (text) {
+      if (run !== analysisRun) return;
+      setState("streaming", text);
+    }).then(function () {
+      if (run !== analysisRun) return;
+      box.dataset.state = "done"; status.textContent = STATUS.done;
+    }).catch(function (e) {
+      if (run !== analysisRun || (e && e.name === "AbortError")) return;
+      setState("error", "Analyse impossible : " + (e && e.message ? e.message : e));
+      const note = document.createElement("p"); note.className = "ai-note";
+      note.textContent = "Vérifie qu'Ollama tourne, que le modèle " + MODEL + " est installé (ollama list), et lance-le avec OLLAMA_ORIGINS=\"*\" ollama serve.";
+      body.appendChild(note);
+    });
+  }
 
   function showResults() {
     var vals = traitValues();
@@ -296,6 +424,7 @@ window.analyse_traits = analyse_traits;
     $("json").value = JSON.stringify(obj, null, 2);
     $("quiz").hidden = true; $("out").hidden = false; $("msg").textContent = "";
     window.scrollTo(0, 0);
+    startAnalysis(vals, obj.jobs);
   }
 
   $("copy").addEventListener("click", function () {
@@ -306,6 +435,7 @@ window.analyse_traits = analyse_traits;
     } catch (e) { fallback(); }
   });
   $("again").addEventListener("click", function () {
+    analysisRun++; ollama.abort();
     answers = new Array(N).fill(null); idx = 0;
     $("out").hidden = true; $("quiz").hidden = false; renderQ(); window.scrollTo(0, 0);
   });
