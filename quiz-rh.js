@@ -1,3 +1,15 @@
+import ollama from "https://esm.sh/ollama@0.6.4/browser";
+
+async function analyse_traits() {
+  const res = await ollama.chat({
+    model: "glm-4.7-flash",
+    messages: [{ role: "system", content: "Each of the following are a score out of 5, be professional, analyse them, weak point, strong points, what matters, what doesn't, what points kind of synergize well, which ones do the opposite, be brief. leadership: 4, commercial: 1.5, relationnel: 5, rigueur: 3, analyse: 3.5, patrimoine: 2, international: 2.5, agri: 3, digital: 4, only talk about things that are worth talking about, don't feel forced to say something about every point, answer in plain text with no formating, 40 words maximum." }],
+  });
+  return res.message.content;
+}
+
+window.analyse_traits = analyse_traits;
+
 (function () {
   /* Les traits et les métiers sont lus dans jobs.json (même dossier). Les questions restent ici. */
   var TRAITS = [];
@@ -259,6 +271,8 @@
     });
   }
 
+// ollama jsoneditor
+
   function showResults() {
     var vals = traitValues();
     var list = $("list"); list.innerHTML = "";
@@ -365,10 +379,10 @@ scales: {
     min: 0,
     max: 100,
     ticks: { display: false },
-    grid: { color: "rgba(100, 116, 139, 0.15)" },
-    angleLines: { color: "rgba(100, 116, 139, 0.2)" },
+    grid: { color: "rgba(149, 172, 205, 0.79)" },
+    angleLines: { color: "rgba(240, 243, 248, 0.7)" },
     pointLabels: {
-      color: "#475569",
+      color: "#ffffff",
       font: {
         family: getComputedStyle(document.body).fontFamily,
         size: 11,

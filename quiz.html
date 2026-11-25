@@ -93,9 +93,10 @@ textarea { width: 100%; font: .8125rem/1.5 ui-monospace, Menlo, Consolas, monosp
   margin: 30px auto;
   padding: 24px;
   background: var(--card-bg, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  <!--border: 1px solid var(--border-color, #e5e7eb);-->
   border-radius: 14px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  background: transparent;
 }
 
 .chart-container h3 {
@@ -103,7 +104,7 @@ textarea { width: 100%; font: .8125rem/1.5 ui-monospace, Menlo, Consolas, monosp
   font-family: inherit;
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--text-color, #263238);
+  color: var(--text-color, #ffffff);
 }
 
 .chart-container canvas {
@@ -161,4 +162,4 @@ textarea { width: 100%; font: .8125rem/1.5 ui-monospace, Menlo, Consolas, monosp
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="quiz-rh.js"></script>
+<script type="module" src="quiz-rh.js"></script>
