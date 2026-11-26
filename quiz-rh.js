@@ -1,10 +1,10 @@
-import ollama from "https://esm.sh/ollama@0.6.4/browser";
+const OLLAMA_URL = "/ollama";
 
 let analysisRun = 0;
 
 /* Valeurs par défaut. Tout est remplacé par la section "meta" de jobs.json quand elle existe. */
 const CONFIG = {
-  model: "glm-4.7-flash",
+  model: "lfm3:1.7b",//glm-4.7-flash",
   agentName: "Ton conseiller",
   questionLead: "Ça me plairait de…",
   levels: ["Pas du tout", "Un peu", "Moyennement", "Beaucoup", "Énormément"]
@@ -12,7 +12,7 @@ const CONFIG = {
 
 function buildSystemPrompt(min, max) {
   return [
-    "Tu es un conseiller en orientation professionnelle. Tu t'adresses à la personne avec « tu ».",
+    "Tu es un conseiller en orientation professionnelle.",
     "Tu reçois ses envies professionnelles, notées de " + min + " (ça ne me plaît pas du tout) à " + max + " (ça me plaît énormément), et les métiers que le quiz lui a proposés.",
     "Ces notes mesurent ce qu'elle aime faire, jamais ce qu'elle sait faire : ne parle jamais de compétences ni de niveau.",
     "Écris 3 courts paragraphes, 150 à 200 mots au total, séparés par une ligne vide :",
@@ -41,20 +41,49 @@ async function analyse_traits(vals, traits, jobs, onToken) {
     options: { temperature: 0.4 },
     messages: [{ role: "system", content: buildSystemPrompt(min, max) }, { role: "user", content: user }]
   };
-  let stream;
-  try {
-    stream = await ollama.chat({ ...request, think: false }); // pas de phase de réflexion = réponse plus rapide
-  } catch (e) {
-    if (!/think/i.test(String(e && e.message))) throw e;
-    stream = await ollama.chat(request); // ce modèle n'accepte pas "think"
-  }
+const response = await fetch(`${OLLAMA_URL}/api/chat`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    ...request,
+    think: false
+  })
+});
 
-  let out = "";
-  for await (const part of stream) {
+if (!response.ok) {
+  throw new Error(`Ollama server error: ${response.status}`);
+}
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+let out = "";
+let buffer = "";
+
+while (true) {
+  const { value, done } = await reader.read();
+  if (done) break;
+
+  buffer += decoder.decode(value, { stream: true });
+
+  const lines = buffer.split("\n");
+  buffer = lines.pop();
+
+  for (const line of lines) {
+    if (!line.trim()) continue;
+
+    const part = JSON.parse(line);
     const piece = part.message && part.message.content;
-    if (piece) { out += piece; onToken(out); }
+
+    if (piece) {
+      out += piece;
+      onToken(out);
+    }
   }
-  return out;
+}
+
+return out;
 }
 
 window.analyse_traits = analyse_traits;
@@ -331,7 +360,7 @@ window.analyse_traits = analyse_traits;
 
   function startAnalysis(vals, jobs) {
     const run = ++analysisRun;
-    ollama.abort(); // coupe une analyse précédente encore en cours
+    //ollama.abort(); // coupe une analyse précédente encore en cours
     ensureAnalysisStyle();
 
     let box = $("analysis");
@@ -413,7 +442,7 @@ window.analyse_traits = analyse_traits;
     } catch (e) { fallback(); }
   });
   $("again").addEventListener("click", function () {
-    analysisRun++; ollama.abort();
+    analysisRun++;// ollama.abort();
     answers = new Array(N).fill(null); idx = 0;
     $("out").hidden = true; $("quiz").hidden = false; renderQ(); window.scrollTo(0, 0);
   });

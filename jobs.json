@@ -4,7 +4,7 @@
     "bornes": "Une borne du côté opposé à la cible est une limite (violation). Une borne du côté de la cible est un plafond de saturation (target inf + max=10 -> 10 et plus = score 1)."
   },
     "meta": {
-    "model": "glm-4.7-flash",
+    "model": "lfm3:1.7b",
     "agentName": "Votre agent orientation BCPE",
     "questionLead": "Ça me plairait de…",
     "levels": [

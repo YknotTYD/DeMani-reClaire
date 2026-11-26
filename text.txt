@@ -6,7 +6,10 @@ deployment
 .env
 json versioning
 nom
+docker
 choper les offres en temps réél
+
+ollama host thing
 
 https://www.youtube.com/watch?v=jUngY80YAGg Découvrez BPALC avec Magali, Directrice adjointe du Territoire Alsace Sud sur l’Animation Co
 https://www.youtube.com/watch?v=5teyhGl2j1c Découvrez la BPALC avec Céline LITTY, Directrice de la succursale de Troyes Libération
