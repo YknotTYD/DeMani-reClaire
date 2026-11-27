@@ -1,0 +1,10 @@
+fastapi==0.115.*
+uvicorn[standard]
+sqlalchemy==2.0.*
+pyjwt
+bcrypt
+email-validator
+pypdf
+python-docx
+python-multipart
+httpx
