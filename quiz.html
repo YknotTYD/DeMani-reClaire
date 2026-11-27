@@ -137,14 +137,37 @@ textarea { width: 100%; font: .8125rem/1.5 ui-monospace, Menlo, Consolas, monosp
 }
 
 @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+
+
+#qrPanel {
+  position: fixed; top: 0; left: 0; bottom: 0; width: 30vw; padding: 24px;
+  background: var(--surface); border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  text-align: center; z-index: 10;
+}
+#qrPanel[hidden] { display: none; }
+#qrPanel img {
+  width: min(100%, 75vh); height: auto; background: #fff; padding: 16px; border-radius: 12px;
+  image-rendering: pixelated;
+}
+#qrPanel p { font-size: clamp(1rem, 2vw, 1.75rem); color: var(--fg); margin: 0; }
+body.qr-open { padding-left: calc(30vw + 16px); }
+
+
+
 </style>
 </head>
 <body>
+<aside id="qrPanel" hidden>
+  <img src="qr.png" alt="QR code">
+  <p>https://unsavable-delcie-ungrudgingly.ngrok-free.dev/quiz</p>
+</aside>
 <main>
   <header>
     <div class="eyebrow">Préférences</div>
     <h1>Quiz métier idéal</h1>
     <p class="lede">18 questions sur ce qui te plaît, sans bonne ni mauvaise réponse. Note chaque activité de 1 à 5 : le quiz te propose les métiers qui te plairaient le plus, avec le lien de l'offre.</p>
+
   </header>
 
   <section id="quiz" class="card" aria-live="polite">

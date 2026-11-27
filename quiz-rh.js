@@ -100,6 +100,17 @@ window.analyse_traits = analyse_traits;
 
   function $(id) { return document.getElementById(id); }
 
+
+
+  document.addEventListener("keydown", function (e) {
+  if (e.key.toLowerCase() !== "q" || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+  var open = $("qrPanel").hidden;
+  $("qrPanel").hidden = !open;
+  document.body.classList.toggle("qr-open", open);
+});
+
+
   function renderInput() {
     var box = $("input"); box.innerHTML = "";
     var s = document.createElement("div"); s.className = "opts"; s.setAttribute("role", "group"); s.setAttribute("aria-label", CONFIG.questionLead);
