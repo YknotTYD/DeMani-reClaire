@@ -1,0 +1,10 @@
+sudo systemctl edit ollama
+
+[service]
+Environment="OLLAMA_HOST=0.0.0.0"
+Environment="OLLAMA_ORIGINS=*"
+Environment="OLLAMA_NUM_PARALLEL=15"
+
+sudo systemctl restart ollama
+
+authtoken: 38CeBHPPzO7BNJl0JqbGOElY06N_5VP31GeakTgot7kE3aSAp
